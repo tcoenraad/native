@@ -31,6 +31,7 @@ import { participantLimitMessage } from '../../lib/calendar-participants';
 import { canCreateEventsIn } from '../../lib/calendar-editability';
 import { getCalendarColor, timePattern } from '../../lib/calendar-utils';
 import { getDateFnsLocale } from '../../lib/calendar-locale';
+import { resolveTimeZone } from '../../lib/calendar-timezone';
 import { useCalendarSubscriptionsStore } from '../../stores/calendar-subscriptions-store';
 import {
   canRemoveCancelled as canRemoveCancelledMeeting,
@@ -79,6 +80,9 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
   const dateLocale = getDateFnsLocale(locale);
   const enabled = useSettingsStore((s) => s.calendarInvitationParsingEnabled);
   const timeFormat = useSettingsStore((s) => s.calendarTimeFormat);
+  // Subscribe so an open invitation follows time-zone changes, including
+  // settings synced from another client. Share one zone for the clock and label.
+  const displayTimeZone = resolveTimeZone(useSettingsStore((s) => s.calendarTimeZone));
   const calendars = useCalendarStore((s) => s.calendars);
   const storeEvents = useCalendarStore((s) => s.events);
   const subscriptions = useCalendarSubscriptionsStore((s) => s.subscriptions);
@@ -201,7 +205,7 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
 
   // In the user's zone, with its name, for an event at a fixed moment; the
   // organizer's wall clock otherwise read as a device time (webmail #1252).
-  const range = getInvitationDisplayRange(event);
+  const range = getInvitationDisplayRange(event, displayTimeZone);
   let dateLabel: string | null = null;
   if (range) {
     const time = timePattern(timeFormat);
@@ -214,7 +218,7 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
       if (range.end) {
         dateLabel += ` – ${format(range.end, isSameDay(range.start, range.end) ? time : `EEE, MMM d · ${time}`, { locale: dateLocale })}`;
       }
-      const zone = range.instant ? invitationZoneLabel(range.instant, locale) : null;
+      const zone = range.instant ? invitationZoneLabel(range.instant, locale, displayTimeZone) : null;
       if (zone) dateLabel += ` ${zone}`;
     }
   }
