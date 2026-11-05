@@ -1,6 +1,6 @@
 import type { CalendarEvent, Participant, Email, Attachment, BodyPart, EmailAddress } from '../api/types';
 import { parseDuration, parseLocalDateTime } from './calendar-utils';
-import { getEffectiveTimeZone, isValidTimeZone, localDateTimeToInstant, toZonedDisplayDate } from './calendar-timezone';
+import { getEffectiveTimeZone, isValidTimeZone, localDateTimeToInstant, toDisplayDate } from './calendar-timezone';
 
 // ─── Address helpers ─────────────────────────────────────
 
@@ -584,7 +584,6 @@ const HAS_UTC_OFFSET = /(?:Z|[+-]\d{2}:?\d{2})$/i;
  */
 export function getInvitationDisplayRange(
   event: Partial<Pick<CalendarEvent, 'start' | 'duration' | 'timeZone' | 'showWithoutTime' | 'utcStart' | 'utcEnd'>>,
-  displayTimeZone = getEffectiveTimeZone(),
 ): InvitationDisplayRange | null {
   if (!event.start) return null;
   const durationMs = parseDuration(event.duration);
@@ -606,8 +605,8 @@ export function getInvitationDisplayRange(
     let end: Date | null = event.utcEnd ? new Date(event.utcEnd) : null;
     if ((!end || isNaN(end.getTime())) && durationMs > 0) end = new Date(instant.getTime() + durationMs);
     return {
-      start: toZonedDisplayDate(instant, displayTimeZone),
-      end: end && !isNaN(end.getTime()) && end.getTime() > instant.getTime() ? toZonedDisplayDate(end, displayTimeZone) : null,
+      start: toDisplayDate(instant),
+      end: end && !isNaN(end.getTime()) && end.getTime() > instant.getTime() ? toDisplayDate(end) : null,
       instant,
     };
   }
@@ -619,9 +618,9 @@ export function getInvitationDisplayRange(
 }
 
 /** The short name of the user's calendar zone at `instant` ("CET", "GMT+1"), or null. */
-export function invitationZoneLabel(instant: Date, locale?: string, displayTimeZone = getEffectiveTimeZone()): string | null {
+export function invitationZoneLabel(instant: Date, locale?: string): string | null {
   try {
-    const part = new Intl.DateTimeFormat(locale, { timeZone: displayTimeZone, timeZoneName: 'short' })
+    const part = new Intl.DateTimeFormat(locale, { timeZone: getEffectiveTimeZone(), timeZoneName: 'short' })
       .formatToParts(instant)
       .find((p) => p.type === 'timeZoneName');
     return part?.value ?? null;

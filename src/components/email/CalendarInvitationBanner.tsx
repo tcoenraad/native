@@ -31,7 +31,6 @@ import { participantLimitMessage } from '../../lib/calendar-participants';
 import { canCreateEventsIn } from '../../lib/calendar-editability';
 import { getCalendarColor, timePattern } from '../../lib/calendar-utils';
 import { getDateFnsLocale } from '../../lib/calendar-locale';
-import { resolveTimeZone } from '../../lib/calendar-timezone';
 import { useCalendarSubscriptionsStore } from '../../stores/calendar-subscriptions-store';
 import {
   canRemoveCancelled as canRemoveCancelledMeeting,
@@ -80,9 +79,9 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
   const dateLocale = getDateFnsLocale(locale);
   const enabled = useSettingsStore((s) => s.calendarInvitationParsingEnabled);
   const timeFormat = useSettingsStore((s) => s.calendarTimeFormat);
-  // Subscribe so an open invitation follows time-zone changes, including
-  // settings synced from another client. Share one zone for the clock and label.
-  const displayTimeZone = resolveTimeZone(useSettingsStore((s) => s.calendarTimeZone));
+  // The display helpers read the store directly; subscribe so an open
+  // invitation rerenders when its time zone changes or syncs from another client.
+  useSettingsStore((s) => s.calendarTimeZone);
   const calendars = useCalendarStore((s) => s.calendars);
   const storeEvents = useCalendarStore((s) => s.events);
   const subscriptions = useCalendarSubscriptionsStore((s) => s.subscriptions);
@@ -205,7 +204,7 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
 
   // In the user's zone, with its name, for an event at a fixed moment; the
   // organizer's wall clock otherwise read as a device time (webmail #1252).
-  const range = getInvitationDisplayRange(event, displayTimeZone);
+  const range = getInvitationDisplayRange(event);
   let dateLabel: string | null = null;
   if (range) {
     const time = timePattern(timeFormat);
@@ -218,7 +217,7 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
       if (range.end) {
         dateLabel += ` – ${format(range.end, isSameDay(range.start, range.end) ? time : `EEE, MMM d · ${time}`, { locale: dateLocale })}`;
       }
-      const zone = range.instant ? invitationZoneLabel(range.instant, locale, displayTimeZone) : null;
+      const zone = range.instant ? invitationZoneLabel(range.instant, locale) : null;
       if (zone) dateLabel += ` ${zone}`;
     }
   }

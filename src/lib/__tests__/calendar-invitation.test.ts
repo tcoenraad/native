@@ -35,24 +35,6 @@ describe('getInvitationDisplayRange (webmail #1252)', () => {
     expect(range?.instant?.toISOString()).toBe('2026-11-12T08:00:00.000Z');
   });
 
-  it('uses the same reactive display zone for the time and its label', () => {
-    // The banner supplies its subscribed setting, rather than letting each
-    // helper independently read a non-reactive global setting.
-    useSettingsStore.setState({ calendarTimeZone: 'UTC' });
-    const event = { start: '2026-11-12T08:00:00Z', duration: 'PT5M' };
-    const amsterdam = getInvitationDisplayRange(event, 'Europe/Amsterdam');
-    expect(shown(amsterdam?.start)).toBe('2026-11-12 09:00');
-    expect(shown(amsterdam?.end)).toBe('2026-11-12 09:05');
-    const label = (zone: string) => new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'short' })
-      .formatToParts(amsterdam!.instant!).find((part) => part.type === 'timeZoneName')!.value;
-    expect(invitationZoneLabel(amsterdam!.instant!, 'en', 'Europe/Amsterdam')).toBe(label('Europe/Amsterdam'));
-
-    const newYork = getInvitationDisplayRange(event, 'America/New_York');
-    expect(shown(newYork?.start)).toBe('2026-11-12 03:00');
-    expect(shown(newYork?.end)).toBe('2026-11-12 03:05');
-    expect(invitationZoneLabel(newYork!.instant!, 'en', 'America/New_York')).toBe(label('America/New_York'));
-  });
-
   it('shows an organizer\'s wall clock in the user\'s zone', () => {
     useSettingsStore.setState({ calendarTimeZone: 'Europe/Warsaw' });
     // As CalendarEvent/parse gives an Exchange invitation from London: no utcStart.
