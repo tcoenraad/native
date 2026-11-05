@@ -21,6 +21,20 @@ describe('getInvitationDisplayRange (webmail #1252)', () => {
   });
   const shown = (d: Date | null | undefined) => (d ? format(d, 'yyyy-MM-dd HH:mm') : null);
 
+  it.each([
+    { start: '2026-11-12T08:00:00', timeZone: 'Etc/UTC', duration: 'PT5M' },
+    { start: '2026-11-12T08:00:00Z', duration: 'PT5M' },
+    { start: '2026-11-12T08:00:00', utcStart: '2026-11-12T08:00:00Z', utcEnd: '2026-11-12T08:05:00Z' },
+  ])('shows a UTC appointment at 09:00 in Amsterdam: %j', (event) => {
+    // An iCalendar PUBLISH with DTSTART:20261112T080000Z and
+    // DTEND:20261112T080500Z. No private message content is needed.
+    useSettingsStore.setState({ calendarTimeZone: 'Europe/Amsterdam' });
+    const range = getInvitationDisplayRange(event);
+    expect(shown(range?.start)).toBe('2026-11-12 09:00');
+    expect(shown(range?.end)).toBe('2026-11-12 09:05');
+    expect(range?.instant?.toISOString()).toBe('2026-11-12T08:00:00.000Z');
+  });
+
   it('shows an organizer\'s wall clock in the user\'s zone', () => {
     useSettingsStore.setState({ calendarTimeZone: 'Europe/Warsaw' });
     // As CalendarEvent/parse gives an Exchange invitation from London: no utcStart.

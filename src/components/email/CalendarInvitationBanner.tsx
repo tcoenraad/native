@@ -79,6 +79,9 @@ export function CalendarInvitationBanner({ email, jmapAccountId }: Props) {
   const dateLocale = getDateFnsLocale(locale);
   const enabled = useSettingsStore((s) => s.calendarInvitationParsingEnabled);
   const timeFormat = useSettingsStore((s) => s.calendarTimeFormat);
+  // The display helpers read the store directly; subscribe so an open
+  // invitation rerenders when its time zone changes or syncs from another client.
+  useSettingsStore((s) => s.calendarTimeZone);
   const calendars = useCalendarStore((s) => s.calendars);
   const storeEvents = useCalendarStore((s) => s.events);
   const subscriptions = useCalendarSubscriptionsStore((s) => s.subscriptions);
